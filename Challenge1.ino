@@ -5,6 +5,11 @@
 // Hacked version of the NewPing library is BotPing
 #include <BotPing.h>
 
+//States
+#define LOOKING_1 1
+#define MOVING_BACK 2
+#define LOOKING_2 3
+#define ANSWERING 4
 // Debug Pins
 #define ZERO_SERVOS 6
 #define HALT_TURRET 7
