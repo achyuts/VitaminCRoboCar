@@ -6,10 +6,12 @@
 #include <BotPing.h>
 
 //States
-#define LOOKING_1 1
-#define MOVING_BACK 2
-#define LOOKING_2 3
-#define ANSWERING 4
+//#define LOOKING_1 1
+//#define MOVING_BACK 2
+//#define LOOKING_2 3
+//#define ANSWERING 4
+int STATE = 1;
+int angle = 0;
 // Debug Pins
 #define ZERO_SERVOS 6
 #define HALT_TURRET 7
@@ -169,12 +171,13 @@ unsigned long us_start_marker;
 unsigned char loop_counter_n;
 // every second
 long loop_counter_s;
-
+int count = 0;
 void setup()
 {
 	pinMode(ZERO_SERVOS, INPUT_PULLUP);
 	pinMode(HALT_TURRET, INPUT_PULLUP);
-	Serial.begin(115200);
+	//Serial.begin(115200);
+  Serial.begin(9600);
 
 	servoLeft.attach(P_Left_Servo);
 	servoRight.attach(P_Right_Servo);
@@ -286,13 +289,73 @@ void loop()
 		}
 
 		//////// 10x a second
-		scanner_angle = 90;
+   switch (STATE){
+      case 1:
+        Serial.println("LOOKING 1");
+        
+        servoScanner.write(angle + scanner_offset);
+        delay(1000);
+        if ((us_ping_result/US_ROUNDTRIP_IN) <= 10){
+           count=count+1;
+           Serial.println(count);
+        }
+        angle = 180;
+        servoScanner.write(angle-scanner_offset);
+        delay(1000);
+        if ((us_ping_result/US_ROUNDTRIP_IN) <= 10){
+           count=count+1;
+           Serial.println(count);
+        }
+        STATE = 2;
+        break;
+      case 2:
+        Serial.println("Moving Back");
+        go_to_goal(bot_x, bot_y+15, -100, 1.0);
+        STATE = 3;
+        break;
+      case 3:
+        Serial.println("Looking 2");
+        if ((us_ping_result/US_ROUNDTRIP_IN) <= 10){
+           count=count+1;
+           Serial.println(count);
+        }
+        angle = 0;
+        servoScanner.write(angle + scanner_offset);
+        delay(1000);
+        if ((us_ping_result/US_ROUNDTRIP_IN) <= 10){
+           count=count+1;
+           Serial.println(count);
+        }
+        STATE = 4;
+        break;
+      case 4:
+        Serial.println("Answering");
+        switch (count){
+          case 0:
+            break;
+          case 1:
+            break;
+          case 2:
+            break;
+          case 3:
+            break;
+          case 4:
+            break;
+        }
+        STATE = 0;
+        break;
+      default:
+        break;
+   }
+   
+   
+		/*scanner_angle = 90;
 		if (us_last_ping/US_ROUNDTRIP_IN < stop_distance) {
 			go_to_done = 1;
 			set_speeds_calibrated(0, 0);
 			go_to_goal(bot_x+12.0, bot_y, 30, 2.0);
 			stop_distance = 0;
-		}
+		}*/
 		
 		// Tasks done even less often (2x a second)
 		// Stagger prnting tasks over two different loop iterations
