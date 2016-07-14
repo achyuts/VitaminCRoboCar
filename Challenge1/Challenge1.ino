@@ -178,7 +178,7 @@ void setup()
 	pinMode(HALT_TURRET, INPUT_PULLUP);
 	//Serial.begin(115200);
   Serial.begin(9600);
-
+  Serial.println("Setup");
 	servoLeft.attach(P_Left_Servo);
 	servoRight.attach(P_Right_Servo);
 	servoScanner.attach(P_Scanner_Servo);
@@ -209,7 +209,7 @@ void setup()
 	
 	// Initialize odometry
 	delay(1000);
-	// Serial.println("Init Odometer");
+	//Serial.println("Init Odometer");
 	reset_odometry();
 
 	// Initialize GO TO controller
@@ -236,12 +236,16 @@ void setup()
 	sonar.timer_us(ECHO_TIMER_FREQ, periodicInterrupt);
 	
 	// move two feet forward and stop
-	go_to_goal(0.0, 24.0, 30, 2.0);
-	stop_distance = 6;
+	//go_to_goal(0.0, 24.0, 30, 2.0);
+	//stop_distance = 6;
+  Serial.println("going backwards");
+  go_to_goal(bot_x, bot_y-1500, -100, 1.0);
+  
 }  
  
 void loop()
 {
+  //Serial.println("Loop");
 	// poll encoders and perform odometry
 	poll_encoders();
 
@@ -262,19 +266,19 @@ void loop()
 		// Navigation, response to sensor stimulus and so on can happen here
 
 		// Add your 100 mS tasks here
-		Serial.print(old_angle);
-		Serial.print(",");
+//		Serial.print(old_angle);
+	//	Serial.print(",");
 		if (ping_in_progress == 1) {
 			// Echo should have come back or timed out by now
 			// if not then Pinger Error
-			Serial.print("0,");
+		//	Serial.print("0,");
 			us_last_ping = ((unsigned long)60)*((unsigned long)US_ROUNDTRIP_IN);
 		} else {
 			// Ping came back
 			// Latest echo delay is in variable: us_ping_result
 			us_last_ping = us_ping_result;
-			Serial.print(us_ping_result/US_ROUNDTRIP_IN);
-			Serial.print(",");
+			//Serial.print(us_ping_result/US_ROUNDTRIP_IN);
+			//Serial.print(",");
 		}
 		us_ping_result = 0;
 		// Send another ping 
@@ -283,34 +287,36 @@ void loop()
 		// Check for IR Beacon
 		if (isr_ir_available) {
 			isr_ir_available = 0;
-			Serial.println(isr_ir_value&0x0f);
+			//Serial.println(isr_ir_value&0x0f);
 		} else {
-			Serial.println("0");
+			//Serial.println("0");
 		}
 
 		//////// 10x a second
+   //Serial.println("here");
    switch (STATE){
       case 1:
         Serial.println("LOOKING 1");
         
-        servoScanner.write(angle + scanner_offset);
-        delay(1000);
+        servoScanner.write(0+scanner_offset);
+        delay(100);
         if ((us_ping_result/US_ROUNDTRIP_IN) <= 10){
            count=count+1;
-           Serial.println(count);
         }
+        delay(100);
         angle = 180;
-        servoScanner.write(angle-scanner_offset);
-        delay(1000);
+        servoScanner.write(180-scanner_offset);
+        delay(100);
         if ((us_ping_result/US_ROUNDTRIP_IN) <= 10){
            count=count+1;
-           Serial.println(count);
         }
         STATE = 2;
+        Serial.println(count);
         break;
       case 2:
         Serial.println("Moving Back");
-        go_to_goal(bot_x, bot_y+15, -100, 1.0);
+        go_to_goal(bot_x, bot_y-15, -100, 10.0);
+        //
         STATE = 3;
         break;
       case 3:
@@ -320,8 +326,8 @@ void loop()
            Serial.println(count);
         }
         angle = 0;
-        servoScanner.write(angle + scanner_offset);
-        delay(1000);
+        servoScanner.write(180 + scanner_offset);
+        delay(100);
         if ((us_ping_result/US_ROUNDTRIP_IN) <= 10){
            count=count+1;
            Serial.println(count);
@@ -329,7 +335,11 @@ void loop()
         STATE = 4;
         break;
       case 4:
+        set_speeds_raw(0, 0);
         Serial.println("Answering");
+        while (1){
+          Serial.println("Answering");
+        }
         switch (count){
           case 0:
             break;
@@ -379,11 +389,11 @@ void loop()
 		////////}
 	}
 	// Move scanner servo at a time staggered 50 ms from ping
-	if (loop_counter_n == MIDDLE_LOOP) {
+	/*if (loop_counter_n == MIDDLE_LOOP) {
 		if (digitalRead(HALT_TURRET) != LOW) {
 			servoScanner.write(scanner_angle + scanner_offset);
 		}
-	}
+	}*/
 
 	// Whatever real time is left in loop() can be used for other tasks
 	// max_consumed_time is used to record maximum realtime used per loop
