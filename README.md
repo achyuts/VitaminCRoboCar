@@ -1,2 +1,2 @@
 # Robot Challenge
-# Team: VitaminC
+# Team: Vitamin C
