@@ -56,7 +56,7 @@ int scanner_angle = 90;
 int old_angle = 90;
 int scanner_increment = 9;
 int scanner_offset = 0;
-
+int delay_var = 0;
 // Goal Seeking PID Variables ---------------------------------------
 struct go_to_st {
 	double gx;
@@ -238,8 +238,8 @@ void setup()
 	// move two feet forward and stop
 	//go_to_goal(0.0, 24.0, 30, 2.0);
 	//stop_distance = 6;
-  Serial.println("going backwards");
-  go_to_goal(bot_x, bot_y-1500, -100, 1.0);
+ // Serial.println("going backwards");
+  //go_to_goal(bot_x, bot_y-1500, -100, 1.0);
   
 }  
  
@@ -248,7 +248,7 @@ void loop()
   //Serial.println("Loop");
 	// poll encoders and perform odometry
 	poll_encoders();
-
+ 
 	// Invoke GO TO Controller
 	go_to_goal_PID();
 	// If goal is reached advance to the next goal, if any left
@@ -297,42 +297,44 @@ void loop()
    switch (STATE){
       case 1:
         Serial.println("LOOKING 1");
-        
-        servoScanner.write(0+scanner_offset);
-        delay(100);
-        if ((us_ping_result/US_ROUNDTRIP_IN) <= 10){
-           count=count+1;
+        delay_var += 1;
+        Serial.println(delay_var);
+        if (delay_var >= 1 && delay_var<10){
+          count += lookRight();
+         
         }
-        delay(100);
-        angle = 180;
-        servoScanner.write(180-scanner_offset);
-        delay(100);
-        if ((us_ping_result/US_ROUNDTRIP_IN) <= 10){
-           count=count+1;
+        if (delay_var >= 10 && delay_var < 20){
+          count += lookLeft();
+          
         }
-        STATE = 2;
-        Serial.println(count);
+        if (delay_var > 20){
+          STATE = 2;
+          delay_var = 0;
+         
+        }
         break;
+        
       case 2:
         Serial.println("Moving Back");
-        go_to_goal(bot_x, bot_y-15, -100, 10.0);
-        //
-        STATE = 3;
-        break;
+        go_to_goal(0, 15, -40, 5.0); 
+        go_to_goal_PID();
+        if (go_to_done==1){
+          STATE = 3;
+          break;
+        }
       case 3:
         Serial.println("Looking 2");
-        if ((us_ping_result/US_ROUNDTRIP_IN) <= 10){
-           count=count+1;
-           Serial.println(count);
+        delay_var+=1;
+        if (delay_var < 10){
+          count += lookRight();
         }
-        angle = 0;
-        servoScanner.write(180 + scanner_offset);
-        delay(100);
-        if ((us_ping_result/US_ROUNDTRIP_IN) <= 10){
-           count=count+1;
-           Serial.println(count);
+        if (delay_var >= 10 && delay_var <=20){
+          count += lookLeft();
         }
-        STATE = 4;
+        if (delay_var >20){
+          STATE = 4;
+          delay_var = 0;
+        }
         break;
       case 4:
         set_speeds_raw(0, 0);
@@ -353,11 +355,7 @@ void loop()
             break;
         }
         STATE = 0;
-        break;
-      default:
-        break;
    }
-   
    
 		/*scanner_angle = 90;
 		if (us_last_ping/US_ROUNDTRIP_IN < stop_distance) {
@@ -407,8 +405,42 @@ void loop()
 	us_start_marker = micros();
 }
 
+///// "STATE MACHINE"
+// lookRight and lookLeft need to return turret found
+int lookRight(){
+   servoScanner.write(0);
+        //delay(100);
+        if ((us_ping_result/US_ROUNDTRIP_IN) <= 10){  //Is US_ROUNDTRIP_IN global? See pinger.h
+           return 1;
+        }
+        else
+          return 0;
+}
+
+int lookLeft(){
+  angle = 180;
+   servoScanner.write(180);
+        //delay(1000);
+        if ((us_ping_result/US_ROUNDTRIP_IN) <= 10){  //Is US_ROUNDTRIP_IN global? See pinger.h
+           return 1;
+        }
+        else
+          return 0;
+}
+
 void do_comm_tasks()
 {
+}
+int check_1(){
+        int c = 0;
+;
+        Serial.println(c);
+        return c;
+}
+
+void move_backwards(){
+     Serial.println("Moving 1");
+     go_to_goal(bot_x, bot_y-15, -100, 10.0);
 }
 
 void print_debug1()
